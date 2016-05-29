@@ -1,0 +1,16 @@
+{
+  "manifest_version": 2,
+  "name": "Cloudtapper",
+  "version": "0.1",
+  "description": "Automatically adds liked tracks on Soundcloud to a specified playlist on Spotify.",
+  "content_scripts": [
+    {
+      "matches": ["https://soundcloud.com/stream"],
+      "js": ["cloudtapper.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    "app_keys.json"
+  ],
+  "permissions": ["storage"]
+}
