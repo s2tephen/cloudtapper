@@ -18,7 +18,7 @@ fetch(chrome.extension.getURL('app_keys.json'), {
   SPOTIFY_USER_ID = json.spotify_user_id;
   SPOTIFY_PLAYLIST_ID = json.spotify_playlist_id;
 
-  if (!localStorage['spotify_access_token'] || Date.now < parseInt(localStorage['spotify_token_expiry'])) {
+  if (!localStorage['spotify_access_token'] || !localStorage['spotify_token_expiry'] || Date.now < parseInt(localStorage['spotify_token_expiry'])) {
     requestSpotifyAuth();
   } else {
     bindEventHandler();
@@ -36,7 +36,7 @@ let requestSpotifyAuth = function() {
     return response.json();
   }).then(function(json) {
     localStorage.setItem('spotify_access_token', json.access_token);
-    localStorage.setItem('spotify_token_expiry', Date.now() + json.expires_in * 1000);
+    localStorage.setItem('spotify_token_expiry', (Date.now() + json.expires_in * 1000));
   }).catch(function(err) {
     console.log('ERROR: Unable to obtain Spotify authorization code.')
   });
@@ -115,13 +115,15 @@ let lookupSoundCloud = function(url) {
     return response.json();
   }).then(function(json) {
     if (json.isrc) {
-      searchSpotify(`${json.user.username.replace(/ /g, '%20')}%20${json.title.replace(/ /g, '%20')}`, json.isrc);
+      searchSpotify(`${json.user.username} ${json.title.strip(/\(|\)/).strip(/(feat|ft)\.? /)}`, json.isrc);
     } else {
-      searchSpotify(`${json.user.username.replace(/ /g, '%20')}%20${json.title.replace(/ /g, '%20')}`);
+      searchSpotify(`${json.user.username} ${json.title.strip(/\(|\)/).strip(/(feat|ft)\.? /)}`);
     }
   }).catch(function(err) {
-    // guess search query from URL, remove trailing digits for reuploads (1-3 to minimize false positives)
-    searchSpotify(url.split('/').join('%20').replace(/-[1-3]$/, '').replace(/-/g, '%20'));
+    // guess search query from URL
+    // remove trailing digits for reuploads (1-3 to minimize false positives)
+    // remove parentheses and feat/ft (since Spotify just treats them as artists)
+    searchSpotify(url.split('/').join('%20').strip(/-[1-3]$/).strip(/\(|\)/).strip(/(feat|ft)\.? /));
   });
 };
 
@@ -170,4 +172,9 @@ Element.prototype.findAncestor = function(className) {
     }
   }
   return null;
+}
+
+// remove all instances of a pattern from a string
+String.prototype.strip = function(pattern) {
+  return this.replace(new RegExp(pattern, 'g'), '');
 }
